@@ -8,7 +8,7 @@
 #include "devices.h"
 
 #define SENSOR_TEMP_KTYPE  0x10
-#define SENSOR_PRESS_TEST  0x20
+#define SENSOR_PRESS_100MV_1KPSI  0x20
 
 typedef struct sensor_data {
 	double sensors[6];
@@ -78,9 +78,10 @@ void initialize_devices(void) {
 double convert_reading(double sensor_reading, uint8_t sensor_type) {
 	switch (sensor_type) {
 	case SENSOR_TEMP_KTYPE:
-		return 150;
-	case SENSOR_PRESS_TEST:
-		return 25;
+		if (sensor_reading > 2) return 295;
+		return 295+sensor_reading*24390.24;
+	case SENSOR_PRESS_100MV_1KPSI:
+		return sensor_reading*68947.57;
 	}
 	return 0;
 }
