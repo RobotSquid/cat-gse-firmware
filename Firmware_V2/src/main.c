@@ -10,6 +10,7 @@
 #include "slip.h"
 #include "ui.h"
 #include "devices.h"
+#include "sequencer.h"
 
 void devices_init(void);
 void process_usb_data(void);
@@ -28,7 +29,7 @@ int main (void)
 	
 	while (1) {
 		update_sensor_data();
-		// todo: process sequence
+		process_sequence();
 		push_servo_data();
 		process_usb_data();
 		
@@ -42,16 +43,13 @@ void devices_init(void) {
 	cpu_irq_enable();
 	udc_start();
 	delay_init();
+	SysTick_Config(system_cpu_clock_get_hz()/1000);
+	NVIC_EnableIRQ(SysTick_IRQn);
 }
 
 void process_usb_data(void) {
 	if (usb_available == 1) {
-		while (udi_cdc_is_rx_ready()) {
-			if (udi_cdc_read_slip_packet(rx_blob, &rx_pos) > 0) {
-				process_command(rx_blob, rx_pos);
-				rx_pos = 0;
-			}
-		}
+		
 		usb_available = 0;
 	}
 }
@@ -59,4 +57,10 @@ void process_usb_data(void) {
 // Data is available on USB, process it
 void udi_cdc_rx_callback(uint8_t port) {
 	usb_available = 1;
+	while (udi_cdc_is_rx_ready()) {
+		if (udi_cdc_read_slip_packet(rx_blob, &rx_pos) > 0) {
+			process_command(rx_blob, rx_pos);
+			rx_pos = 0;
+		}
+	}
 }

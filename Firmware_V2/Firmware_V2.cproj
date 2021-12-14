@@ -33,11 +33,12 @@
         <options>
           <option id="common.boards" value="Add" config="" content-id="Atmel.ASF" />
           <option id="common.services.usb.class.device" value="Add" config="cdc" content-id="Atmel.ASF" />
+          <option id="common2.services.delay" value="Add" config="systick" content-id="Atmel.ASF" />
           <option id="sam0.drivers.port" value="Add" config="" content-id="Atmel.ASF" />
           <option id="sam0.drivers.sercom.i2c.master" value="Add" config="polled" content-id="Atmel.ASF" />
           <option id="sam0.drivers.sercom.spi" value="Add" config="polled" content-id="Atmel.ASF" />
           <option id="sam0.drivers.system" value="Add" config="" content-id="Atmel.ASF" />
-          <option id="common2.services.delay" value="Add" config="systick" content-id="Atmel.ASF" />
+          <option id="sam0.drivers.system.clock" value="Add" config="" content-id="Atmel.ASF" />
           <option id="sam0.utils.linker_scripts" value="Add" config="" content-id="Atmel.ASF" />
         </options>
         <configurations>

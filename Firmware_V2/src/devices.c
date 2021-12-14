@@ -27,8 +27,11 @@ sensor_types pressure_types;
 sensor_data temperature_data;
 sensor_types temperature_types;
 servo_data servos_data;
+servo_data prev_servos_data;
+uint32_t last_servo_update[16];
 
 uint8_t servo_i2c_addr = 0b1000001;
+uint8_t servo_enable_pin = PIN_PA00;
 uint8_t pressure_i2c_addr[3] = {0b1001000, 0b1001001, 0b1001010};
 uint8_t temperature_spi_ss[3] = {PIN_PA04, PIN_PA05, PIN_PA11};
 
@@ -40,6 +43,8 @@ struct spi_module spi_master;
 struct spi_slave_inst spi_slaves[3];
 uint8_t spi_tx_buffer[2];
 uint8_t spi_rx_buffer[2];
+
+uint32_t msec = 0;
 
 void initialize_devices(void) {
 	// configure I2C
@@ -72,6 +77,11 @@ void initialize_devices(void) {
 	
 	// configure PCA9685
 	pca9685_init();
+	struct port_config config_port_pin;
+	port_get_config_defaults(&config_port_pin);
+	config_port_pin.direction = PORT_PIN_DIR_OUTPUT;
+	port_pin_set_config(servo_enable_pin, &config_port_pin);
+	
 }
 
 // TODO: implement conversions
@@ -151,17 +161,32 @@ void pca9685_init(void) {
 }
 
 void pca9685_write_servos(uint8_t start, uint8_t count) {
+	uint32_t current_time = get_msec();
 	i2c_packet.address = servo_i2c_addr;
 	i2c_packet.data_length = count*4+1;
 	i2c_buffer[0] = 0x6 + 4*start; //LEDx_ON_L register for start, auto increments
+	uint8_t enable_flag = 0;
 	for (uint8_t i = 0; i < count; i++) {
 		i2c_buffer[i*4+1] = 0x0; //LEDx_ON_L
 		i2c_buffer[i*4+2] = 0x0; //LEDx_ON_H
-		uint32_t dat = ((uint32_t)servos_data.servos[i]*4096)/20000;
+		uint16_t corrected_data = servos_data.servos[i];
+		if (current_time - last_servo_update[i] > 1200) {
+			if ((corrected_data > prev_servos_data.servos[i]) && (corrected_data-prev_servos_data.servos[i] > 99)) {
+				corrected_data -= 50;
+			} else if ((corrected_data < prev_servos_data.servos[i]) && (prev_servos_data.servos[i]-corrected_data > 99)) {
+				corrected_data += 50;
+			}
+		}
+		uint32_t dat = ((uint32_t)corrected_data*4096)/20000;
 		i2c_buffer[i*4+3] = (uint8_t)(dat & 0xFF); //LEDx_OFF_L
 		i2c_buffer[i*4+4] = (uint8_t)((dat & 0xF00) >> 8); //LEDx_OFF_H
-		if (servos_data.servos[i] == 0) i2c_buffer[i*4+4] += 0b00010000; 
+		if (servos_data.servos[i] == 0 || (current_time - last_servo_update[i]) > 1400) {
+			i2c_buffer[i*4+4] += 0b00010000; 
+		} else {
+			enable_flag = 1;
+		}
 	}
+	port_pin_set_output_level(servo_enable_pin, enable_flag);
 	i2c_master_write_packet_wait(&i2c_master, &i2c_packet);
 }
 
@@ -186,6 +211,10 @@ uint8_t* get_valve_data(void) {
 }
 
 void set_servo_data(uint8_t* data) {
+	for (int i = 0; i < 16; i++) {
+		prev_servos_data.servos[i] = servos_data.servos[i];
+		last_servo_update[i] = get_msec();
+	}
 	for (int i = 0; i < 32; i++) {
 		((uint8_t*)&servos_data)[i] = data[i];
 	}
@@ -204,5 +233,16 @@ void set_temperature_types(uint8_t* data) {
 }
 
 void set_servo(uint8_t servo, uint16_t position) {
+	prev_servos_data.servos[servo] = servos_data.servos[servo];
+	last_servo_update[servo] = get_msec();
 	servos_data.servos[servo] = position;
+}
+
+void SysTick_Handler(void) {
+	msec++;
+}
+
+uint32_t get_msec(void) {
+	if (SysTick_Config(system_cpu_clock_get_hz()/1000) == 0) return msec;
+	return 0;
 }

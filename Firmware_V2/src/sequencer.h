@@ -10,5 +10,8 @@
 #define SEQUENCER_H_
 
 #include <asf.h>
+#include "devices.h"
+
+void process_sequence(void);
 
 #endif /* SEQUENCER_H_ */
