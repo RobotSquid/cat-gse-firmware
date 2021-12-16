@@ -7,21 +7,6 @@
 
 #include "devices.h"
 
-#define SENSOR_TEMP_KTYPE  0x10
-#define SENSOR_PRESS_100MV_1KPSI  0x20
-
-typedef struct sensor_data {
-	double sensors[6];
-} sensor_data;
-
-typedef struct sensor_types {
-	uint8_t type[6];
-} sensor_types;
-
-typedef struct servo_data {
-	uint16_t servos[16];
-} servo_data;
-
 sensor_data pressure_data;
 sensor_types pressure_types;
 sensor_data temperature_data;

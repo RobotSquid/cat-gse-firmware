@@ -11,6 +11,21 @@
 
 #include <asf.h>
 
+#define SENSOR_TEMP_KTYPE  0x10
+#define SENSOR_PRESS_100MV_1KPSI  0x20
+
+typedef struct sensor_data {
+	double sensors[6];
+} sensor_data;
+
+typedef struct sensor_types {
+	uint8_t type[6];
+} sensor_types;
+
+typedef struct servo_data {
+	uint16_t servos[16];
+} servo_data;
+
 void initialize_devices(void);
 void update_sensor_data(void);
 void push_servo_data(void);
