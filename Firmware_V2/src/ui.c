@@ -87,7 +87,7 @@ void send_command_status(uint8_t data) {
 	udi_cdc_write_slip_packet(&data, 1);
 }
 
-void set_sequence_data(uint8_t* data, uint32_t len) {
+void set_states_data(state_machine *machine, uint8_t* data, uint32_t len) {
 	// NOT IMPLEMENTED
 	send_command_status(ACK);
 }
