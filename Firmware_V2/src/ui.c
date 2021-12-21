@@ -50,9 +50,10 @@ void process_command(uint8_t* data, uint32_t len) {
 		return set_button_pressed(data[1]);
 	case CMD_GET_STATES:
 		udi_cdc_write_slip_packet(get_machine_states(), 2);
+		return;
 	case CMD_ABORT_ABORT:
 		execute_abort();
-		send_command_status(ACK);
+		return send_command_status(ACK);
 	default:
 		return send_command_status(NACK);
 	}
@@ -76,7 +77,7 @@ void send_command_status(uint8_t data) {
 }
 
 void set_states_data(uint8_t type, uint8_t* data, uint32_t len) {
-	if (len != 409*8) return send_command_status(NACK);
+	if (len != 516*8) return send_command_status(NACK);
 	send_command_status(ACK);
 	if (type == 0) set_fuel_states_data(data);
 	else if (type == 1) set_ox_states_data(data);

@@ -21,22 +21,31 @@ void process_sequence(void) {
 }
 
 uint8_t check_state_machine(state_machine *machine) {
-	state_node *node = &(machine->states[machine->state_idx]);
+	state_node *node1 = &(machine->states[machine->state_idx]);
 	for (int i = 0; i < 8; i++) {
-		state_transition *transition = &(node->transitions[i]);
-		// (state_active AND not lockout) OR (abort_transition)
-		uint8_t transition_allowed = ((node->state_flags & 0b1) || (transition->transition_flags & 0b1));
+		state_transition *transition = &(node1->transitions[i]);
+		uint8_t transition_allowed = ((node1->state_flags & 0b1) || (transition->transition_flags & 0b1));
 		if (transition_allowed && get_criteria_triggered(machine, transition)) {
-			execute_transition(machine, node, transition);
+			execute_transition(machine, node1, transition);
 			return 1;
 		}
 	}
-	if (machine->keyframe_idx < 16) {
+	if (machine->keyframe_idx < 4) {
 		servo_keyframe *next = &(machine->current_keyframes[machine->keyframe_idx]);
-		if (get_msec() - machine->last_keyframe_millis >= next->delay_ms_before) {
-			if (next->servo_state != 0) set_servo(next->servo_idx, next->servo_idx);
-			machine->last_keyframe_millis = get_msec();
-			machine->keyframe_idx++;
+		while (machine->keyframe_idx < 4 && get_msec() - machine->last_keyframe_millis >= next->delay_ms_before) {
+			if (next->servo_state != 0) set_servo(next->servo_idx, next->servo_state);
+			else machine->keyframe_idx = 4;
+			if (machine->keyframe_idx < 4) {
+				machine->last_keyframe_millis = get_msec();
+				machine->keyframe_idx++;
+				next = &(machine->current_keyframes[machine->keyframe_idx]);
+			}
+		}
+		if (machine->keyframe_idx >= 4) {
+			for (int i = 0; i < 16; i++) {
+				state_node *node2 = &(machine->states[machine->state_idx]);
+				if (node2->state_servos[i] != 0) set_servo(i, node2->state_servos[i]);
+			}
 		}
 	}
 	return 0;
@@ -77,31 +86,33 @@ void execute_abort(void) {
 	oxidizer_side.states[oxidizer_side.state_idx].state_flags &= ~(0b01);
 	oxidizer_side.state_idx = 1;
 	oxidizer_side.states[oxidizer_side.state_idx].state_flags |= 0b01;
-	oxidizer_side.keyframe_idx = 16;
+	oxidizer_side.keyframe_idx = 4;
 	oxidizer_side.timer_start_millis = get_msec();
 	fuel_side.states[fuel_side.state_idx].state_flags &= ~(0b01);
 	fuel_side.state_idx = 1;
 	fuel_side.states[fuel_side.state_idx].state_flags |= 0b01;
-	fuel_side.keyframe_idx = 16;
+	fuel_side.keyframe_idx = 4;
 	fuel_side.timer_start_millis = get_msec();
 }
 
 void reset_states(void) {
 	oxidizer_side.state_idx = 0;
-	oxidizer_side.keyframe_idx = 16;
+	oxidizer_side.keyframe_idx = 4;
+	oxidizer_side.states[oxidizer_side.state_idx].state_flags |= 0b01;
 	fuel_side.state_idx = 0;
-	fuel_side.keyframe_idx = 16;
+	fuel_side.keyframe_idx = 4;
+	fuel_side.states[fuel_side.state_idx].state_flags |= 0b01;
 }
 
 void set_fuel_states_data(uint8_t *data) {
-	for (int i = 0; i < 349*8; i++) {
+	for (int i = 0; i < 516*8; i++) {
 		((uint8_t*)&fuel_side.states)[i] = data[i];
 	}
 	reset_states();
 }
 
 void set_ox_states_data(uint8_t *data) {
-	for (int i = 0; i < 349*8; i++) {
+	for (int i = 0; i < 516*8; i++) {
 		((uint8_t*)&oxidizer_side.states)[i] = data[i];
 	}
 	reset_states();

@@ -14,8 +14,9 @@
 
 typedef struct servo_keyframe {
 	uint32_t delay_ms_before;
-	uint8_t servo_idx;
 	uint32_t servo_state;
+	uint8_t servo_idx;
+	uint8_t temp1, temp2, temp3;
 } servo_keyframe;
 
 #define TRIGGER_NONE         0x00
@@ -29,15 +30,16 @@ typedef struct servo_keyframe {
 typedef struct state_transition {
 	uint8_t transition_flags; // bit0: abort transition
 	uint8_t trigger_type;
+	uint8_t target_state;
+	uint8_t temp1;
 	uint32_t trigger_param1;
 	uint32_t trigger_param2;
-	uint8_t target_state;
 	servo_keyframe transition[4];
 } state_transition;
 
-// size of node: 32+1+8*(11+4*(9))=409
+// size of node: 32+4+8*(12+4*(12))=516
 typedef struct state_node {
-	uint8_t state_flags; // bit0: state active
+	uint32_t state_flags; // bit0: state active
 	uint16_t state_servos[16];
 	state_transition transitions[8];
 } state_node;
