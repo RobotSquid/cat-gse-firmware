@@ -17,6 +17,7 @@ uint32_t last_servo_update[16];
 
 uint8_t servo_i2c_addr = 0b1000001;
 uint8_t servo_enable_pin = PIN_PA00;
+uint8_t spark_enable_pin = PIN_PA07;
 uint8_t pressure_i2c_addr[3] = {0b1001000, 0b1001001, 0b1001010};
 uint8_t temperature_spi_ss[3] = {PIN_PA04, PIN_PA05, PIN_PA11};
 
@@ -66,7 +67,8 @@ void initialize_devices(void) {
 	port_get_config_defaults(&config_port_pin);
 	config_port_pin.direction = PORT_PIN_DIR_OUTPUT;
 	port_pin_set_config(servo_enable_pin, &config_port_pin);
-	
+	port_pin_set_config(spark_enable_pin, &config_port_pin);
+	set_spark_enabled(0);
 }
 
 // TODO: implement conversions
@@ -105,8 +107,8 @@ void push_servo_data(void) {
 void ads1015_start_conversion(uint8_t chip, uint8_t mux) {
 	i2c_packet.address = pressure_i2c_addr[chip];
 	i2c_buffer[0] = 0b00000001; // point to config register
-	i2c_buffer[1] = 0b10000101; // single shot, FSR=2.048V, set mux
-	if (mux == 1) i2c_buffer[1] += 0b011 << 4;
+	i2c_buffer[1] = 0b10001111; // single shot, FSR=0.256V, set mux
+	if (mux == 1) i2c_buffer[1] += 0b00110000;
 	i2c_buffer[2] = 0b11100000; // 3300 SPS, default comparator settings
 	i2c_packet.data_length = 3;
 	i2c_master_write_packet_wait(&i2c_master, &i2c_packet);
@@ -120,7 +122,7 @@ double ads1015_read_conversion(uint8_t chip, uint8_t mux) {
 	i2c_packet.data_length = 2;
 	i2c_master_read_packet_wait(&i2c_master, &i2c_packet);
 	int16_t result = ((int16_t)i2c_buffer[0] << 8) + i2c_buffer[1];
-	return (2.048*(double)result)/0x8000;
+	return (0.256*(double)result)/0x8000;
 }
 
 double ads1118_read_and_start_conversion(uint8_t chip, uint8_t mux) {
@@ -173,6 +175,10 @@ void pca9685_write_servos(uint8_t start, uint8_t count) {
 	}
 	port_pin_set_output_level(servo_enable_pin, enable_flag);
 	i2c_master_write_packet_wait(&i2c_master, &i2c_packet);
+}
+
+void set_spark_enabled(uint8_t enabled) {
+	port_pin_set_output_level(spark_enable_pin, enabled);
 }
 
 double get_pressure(uint8_t sensor) {

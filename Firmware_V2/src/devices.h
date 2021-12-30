@@ -52,6 +52,7 @@ void pca9685_write_servos(uint8_t start, uint8_t count);
 
 void set_servo_data(uint8_t* data);
 void set_servo(uint8_t servo, uint16_t position);
+void set_spark_enabled(uint8_t enabled);
 
 uint32_t get_msec(void);
 

@@ -79,6 +79,7 @@ uint8_t execute_transition(state_machine *machine, state_node *node, state_trans
 	machine->keyframe_idx = 0;
 	machine->last_keyframe_millis = get_msec();
 	machine->timer_start_millis = get_msec();
+	set_spark_enabled((machine->states[machine->state_idx].state_flags & 0b10) >> 1);
 	return 1;
 }
 
