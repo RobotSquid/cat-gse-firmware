@@ -65,6 +65,10 @@ uint8_t get_criteria_triggered(state_machine *machine, state_transition *transit
 		return transition->trigger_param1 < 6 && get_temperature(transition->trigger_param1) > transition->trigger_param2;
 	case TRIGGER_TEMP_LT:
 		return transition->trigger_param1 < 6 && get_temperature(transition->trigger_param1) < transition->trigger_param2;
+	case TRIGGER_FORCE_GT:
+		return hx711_read_cell() > transition->trigger_param1;
+	case TRIGGER_FORCE_LT:
+		return hx711_read_cell() < transition->trigger_param1;
 	case TRIGGER_NONE:
 	default:
 		return 0;

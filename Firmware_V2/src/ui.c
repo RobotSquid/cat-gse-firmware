@@ -37,6 +37,9 @@ void process_command(uint8_t* data, uint32_t len) {
 		if (len < 6) return send_command_status(NACK);
 		send_command_status(ACK);
 		return set_servo(data[1], *((uint32_t*)(data+2)));
+	case CMD_GET_LOAD_CELL:
+		udi_cdc_write_slip_packet(get_cell_data(), 8);
+		return;
 	case CMD_SET_OX_STATES:
 		return set_states_data(1, data+1, len-1);
 	case CMD_SET_FUEL_STATES:

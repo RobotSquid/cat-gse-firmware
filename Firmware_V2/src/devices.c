@@ -13,11 +13,14 @@ sensor_data temperature_data;
 sensor_types temperature_types;
 servo_data servos_data;
 servo_data prev_servos_data;
+double load_cell_data;
 uint32_t last_servo_update[16];
 
 uint8_t servo_i2c_addr = 0b1000001;
 uint8_t servo_enable_pin = PIN_PA00;
 uint8_t spark_enable_pin = PIN_PA07;
+uint8_t load_cell_clk_pin = PIN_PA15;
+uint8_t load_cell_data_pin = PIN_PA24;
 uint8_t pressure_i2c_addr[3] = {0b1001000, 0b1001001, 0b1001010};
 uint8_t temperature_spi_ss[3] = {PIN_PA04, PIN_PA05, PIN_PA11};
 
@@ -69,6 +72,12 @@ void initialize_devices(void) {
 	port_pin_set_config(servo_enable_pin, &config_port_pin);
 	port_pin_set_config(spark_enable_pin, &config_port_pin);
 	set_spark_enabled(0);
+	
+	// configure HX711
+	port_pin_set_config(load_cell_clk_pin, &config_port_pin);
+	config_port_pin.direction = PORT_PIN_DIR_INPUT;
+	config_port_pin.input_pull = PORT_PIN_PULL_NONE;
+	port_pin_set_config(load_cell_data_pin, &config_port_pin);
 }
 
 // TODO: implement conversions
@@ -98,6 +107,7 @@ void update_sensor_data(void) {
 		pressure_data.sensors[i*2+1] = convert_reading(ads1015_read_conversion(i, 1), pressure_types.type[i*2+1]);
 		ads1015_start_conversion(i, 0);
 	}
+	load_cell_data = hx711_read_cell();
 }
 
 void push_servo_data(void) {
@@ -177,6 +187,20 @@ void pca9685_write_servos(uint8_t start, uint8_t count) {
 	i2c_master_write_packet_wait(&i2c_master, &i2c_packet);
 }
 
+double hx711_read_cell(void) {
+	int32_t raw_data = 0;
+	for (uint8_t i = 0; i < 24; i++) {
+		port_pin_set_output_level(load_cell_clk_pin, 1);
+		port_pin_set_output_level(load_cell_clk_pin, 0);
+		uint8_t bit = port_pin_get_input_level(load_cell_data_pin);
+		raw_data |= ((uint32_t)(bit) << (31-i));
+	}
+	port_pin_set_output_level(load_cell_clk_pin, 1); // input A, 128x
+	port_pin_set_output_level(load_cell_clk_pin, 0);
+	raw_data >>= 8;
+	return (double)raw_data;
+} 
+
 void set_spark_enabled(uint8_t enabled) {
 	port_pin_set_output_level(spark_enable_pin, enabled);
 }
@@ -199,6 +223,10 @@ uint8_t* get_temperature_data(void) {
 
 uint8_t* get_valve_data(void) {
 	return (uint8_t*)&servos_data;
+}
+
+uint8_t* get_cell_data(void) {
+	return (uint8_t*)&load_cell_data;
 }
 
 void set_servo_data(uint8_t* data) {

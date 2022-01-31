@@ -23,6 +23,7 @@
 #define CMD_TEMP_TYPES        0x06
 #define CMD_PRESS_TYPES       0x07
 #define CMD_SINGLE_VALVE      0x08
+#define CMD_GET_LOAD_CELL     0x09
 #define CMD_SET_OX_STATES     0x11
 #define CMD_SET_FUEL_STATES   0x12
 #define CMD_RESET_STATE       0x13

@@ -26,6 +26,8 @@ typedef struct servo_keyframe {
 #define TRIGGER_PRESSURE_LT  0x12 // param1: sensor idx, param2: value
 #define TRIGGER_TEMP_GT      0x21 // param1: sensor idx, param2: value
 #define TRIGGER_TEMP_LT      0x22 // param1: sensor idx, param2: value
+#define TRIGGER_FORCE_GT     0x31 // param1: value
+#define TRIGGER_FORCE_LT     0x32 // param1: value
 
 typedef struct state_transition {
 	uint8_t transition_flags; // bit0: abort transition
